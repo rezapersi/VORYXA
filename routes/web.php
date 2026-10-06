@@ -1,8 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 use Inertia\Inertia;
 use App\Models\Telchanel;
+
 
 
 Route::get('insertchannel', function () {
@@ -18,6 +20,13 @@ Route::get('insertchannel', function () {
 
 
 
+Route::get('/removecache', function () {
+    $exitCode = Artisan::call('cache:clear');
+    $exitCode = Artisan::call('config:clear');
+    $exitCode = Artisan::call('config:cache');
+
+    return 'DONE'; //Return anything
+});
 
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');

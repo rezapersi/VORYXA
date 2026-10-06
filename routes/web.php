@@ -28,6 +28,8 @@ Route::get('/removecache', function () {
     return 'DONE'; //Return anything
 });
 
+
+
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');

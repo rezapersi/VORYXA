@@ -11,5 +11,5 @@ use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('telegram:scan-channels')
     ->everyFifteenMinutes()
-    ->withoutOverlapping(20)  // اگر اجرای قبلی طول کشید، اجرای بعدی رد شود
+  //  ->withoutOverlapping(20)  // اگر اجرای قبلی طول کشید، اجرای بعدی رد شود
     ->appendOutputTo(storage_path('logs/telegram-scan.log'));

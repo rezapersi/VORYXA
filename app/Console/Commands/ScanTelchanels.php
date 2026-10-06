@@ -21,7 +21,7 @@ class ScanTelchanels extends Command
         FinalDecodeNpvtService $decodenpvt
     ): int {
         // 🔒 قفل برای جلوگیری از اجرای همزمان
-        $lock = Cache::lock('telegram-scan-lock', 900);
+        $lock = Cache::lock('telegram-scan-lock', 840);
 
         if (!$lock->get()) {
             $this->warn('⏭️  اسکن قبلی هنوز در حال اجراست. رد می‌شود.');

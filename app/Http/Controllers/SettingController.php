@@ -13,12 +13,20 @@ class SettingController extends Controller
         protected SettingService $settingservice
     ) {}
 
-    public  function getconfigs()
+    public  function getsetting()
     {
-        $get = $this->settingservice->GetSettings();
-        return response()->json([
-            'success' => true,
-            'data' => $get,
-        ], 200);
+
+        try {
+            $get = $this->settingservice->GetSetting();
+            return response()->json([
+                'success' => true,
+                'data' => $get,
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'data' => [],
+            ], 400);
+        }
     }
 }

@@ -15,10 +15,18 @@ class ConfigController extends Controller
 
     public  function getconfigs()
     {
-        $get = $this->configservice->GetConfigs();
-        return response()->json([
-            'success' => true,
-            'data' => $get,
-        ], 200);
+
+        try {
+            $get = $this->configservice->GetConfigs();
+            return response()->json([
+                'success' => true,
+                'data' => $get,
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'data' => [],
+            ], 400);
+        }
     }
 }

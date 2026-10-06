@@ -14,5 +14,5 @@ Route::get('/user', function (Request $request) {
 
 Route::prefix('v1')->group(function () {
     Route::get('/configs', [ConfigController::class, 'getconfigs']);
-    Route::get('/settings', [SettingController::class, 'getsettings']);
+    Route::get('/setting', [SettingController::class, 'getsetting']);
 });

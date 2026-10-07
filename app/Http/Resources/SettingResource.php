@@ -22,6 +22,7 @@ class SettingResource extends JsonResource
             'website' => $this->website,
             'contact' => $this->contact,
             'rateapplink' => $this->rateapplink,
+            'shareapplink' => $this->shareapplink,
             'adslevelmain' => $this->adslevelmain,
             'adslevelreward' => $this->adslevelreward,
         ];

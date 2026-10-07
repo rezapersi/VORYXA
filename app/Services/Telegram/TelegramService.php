@@ -21,12 +21,6 @@ class TelegramService
 
         $settings = new Settings;
 
-        // تنظیمات API
-        // $settings->setAppInfo(
-        //     (new AppInfo)
-        //         ->setApiId((int) env('TELEGRAM_API_ID'))
-        //         ->setApiHash(env('TELEGRAM_API_HASH'))
-        // );
 
         $settings->setAppInfo(
             (new AppInfo)
@@ -51,6 +45,7 @@ class TelegramService
             (new Files)
                 ->setDownloadParallelChunks(10) // ✅ تعداد چانک‌های موازی برای دانلود
         );
+
 
         $this->client = new API($sessionPath, $settings);
     }

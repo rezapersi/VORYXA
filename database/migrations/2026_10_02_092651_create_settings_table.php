@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('website')->nullable();
             $table->string('contact')->nullable();
             $table->text('rateapplink')->nullable();
+            $table->text('shareapplink')->nullable();
             $table->string('adslevelmain', 255)->nullable();
             $table->string('adslevelreward', 255)->nullable();
             $table->timestamps();

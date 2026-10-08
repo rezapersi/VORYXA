@@ -46,6 +46,20 @@ class ConnectionProfile
             $protocol = $this->detectProtocol($config, $rawProfile, $rawOutbound);
         }
 
+        // Direct NPVT profiles use configType as the authoritative discriminator.
+        // It must win over ambiguous fields such as password/method/security.
+        if (empty($rawOutbound['protocol']) && isset($rawProfile['configType'])) {
+            $type = (int) $rawProfile['configType'];
+            $protocol = match ($type) {
+                1 => 'vmess',
+                3 => 'shadowsocks',
+                5 => 'vless',
+                6 => 'trojan',
+                7 => 'socks',
+                default => $protocol,
+            };
+        }
+
         /*
         |--------------------------------------------------------------------------
         | Basic fields
@@ -96,10 +110,10 @@ class ConnectionProfile
         $username = $this->firstValue([
             $config['username'] ?? null,
             $config['user'] ?? null,
+            $rawProfile['username'] ?? null,
+            $rawProfile['user'] ?? null,
         ]);
 
-        // IMPORTANT: Shadowsocks `method` is its cipher.
-        // Never fall back to `security` here; `security` may independently be TLS.
         $method = $this->firstValue([
             $config['method'] ?? null,
             $rawProfile['method'] ?? null,
@@ -115,6 +129,42 @@ class ConnectionProfile
             $config['flow'] ?? null,
             $this->outboundFlow($rawOutbound),
         ]);
+
+        // Direct NPVT profiles overload password/method depending on protocol.
+        // Normalize them here so the URI builder never has to guess.
+        if (!is_array($rawOutbound) || empty($rawOutbound['protocol'])) {
+            switch ($protocol) {
+                case 'vless':
+                    $uuid = $uuid ?: $password;
+                    $password = null;
+                    $encryption = $encryption ?: $method ?: 'none';
+                    $method = null;
+                    break;
+
+                case 'vmess':
+                    $uuid = $uuid ?: $password;
+                    $password = null;
+                    break;
+
+                case 'shadowsocks':
+                    // password + method remain exactly as stored.
+                    $uuid = null;
+                    $encryption = null;
+                    break;
+
+                case 'trojan':
+                    // password is the Trojan credential; method is not a cipher.
+                    $uuid = null;
+                    $method = null;
+                    break;
+
+                case 'socks':
+                    $uuid = null;
+                    $method = null;
+                    $encryption = null;
+                    break;
+            }
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -378,8 +428,14 @@ class ConnectionProfile
         |
         */
 
+        $sourceTransport = is_array($config['transport'] ?? null)
+            ? $config['transport']
+            : [];
+
         $host = $this->firstValue([
             $config['host'] ?? null,
+            $sourceTransport['host'] ?? null,
+
             $profile['host'] ?? null,
             $stream['wsSettings']['host'] ?? null,
             $stream['httpSettings']['host'] ?? null,
@@ -391,6 +447,8 @@ class ConnectionProfile
 
         $path = $this->firstValue([
             $config['path'] ?? null,
+            $sourceTransport['path'] ?? null,
+
             $profile['path'] ?? null,
             $stream['wsSettings']['path'] ?? null,
             $stream['httpSettings']['path'] ?? null,
@@ -427,6 +485,7 @@ class ConnectionProfile
                 $ws['enableBrowserDialer'] ?? null,
                 $profile['enableBrowserDialer'] ?? null,
                 $config['enableBrowserDialer'] ?? null,
+                $sourceTransport['enableBrowserDialer'] ?? null,
             ]),
         ];
 
@@ -534,6 +593,7 @@ class ConnectionProfile
 
         $xhttp = $stream['xhttpSettings']
             ?? $stream['splithttpSettings']
+            ?? $sourceTransport['raw']
             ?? [];
 
         $transport['xhttp'] = [
@@ -541,18 +601,21 @@ class ConnectionProfile
                 $xhttp['mode'] ?? null,
                 $profile['mode'] ?? null,
                 $config['mode'] ?? null,
+                $sourceTransport['mode'] ?? null,
             ]),
 
             'host' => $this->firstValue([
                 $xhttp['host'] ?? null,
                 $profile['host'] ?? null,
                 $config['host'] ?? null,
+                $sourceTransport['host'] ?? null,
             ]),
 
             'path' => $this->firstValue([
                 $xhttp['path'] ?? null,
                 $profile['path'] ?? null,
                 $config['path'] ?? null,
+                $sourceTransport['path'] ?? null,
             ]),
 
             'extra' => $this->firstValue([
@@ -650,6 +713,14 @@ class ConnectionProfile
             ? $stream['realitySettings']
             : [];
 
+        $sourceTls = is_array($config['tls'] ?? null)
+            ? $config['tls']
+            : [];
+
+        $sourceReality = is_array($config['reality'] ?? null)
+            ? $config['reality']
+            : [];
+
         /*
         |--------------------------------------------------------------------------
         | TLS source precedence
@@ -663,6 +734,8 @@ class ConnectionProfile
             $tlsSettings['serverName'] ?? null,
             $profile['sni'] ?? null,
             $config['sni'] ?? null,
+            $sourceTls['sni'] ?? null,
+            $sourceTls['server_name'] ?? null,
         ]);
 
         $fingerprint = $this->firstValue([
@@ -671,12 +744,14 @@ class ConnectionProfile
             $profile['fingerprint'] ?? null,
             $config['fingerprint'] ?? null,
             $config['fingerPrint'] ?? null,
+            $sourceTls['fingerprint'] ?? null,
         ]);
 
         $alpn = $this->firstValue([
             $tlsSettings['alpn'] ?? null,
             $profile['alpn'] ?? null,
             $config['alpn'] ?? null,
+            $sourceTls['alpn'] ?? null,
         ]);
 
         if (is_array($alpn)) {
@@ -698,6 +773,13 @@ class ConnectionProfile
 
             array_key_exists('insecure', $config)
                 ? $config['insecure']
+                : null,
+
+            array_key_exists('allowInsecure', $sourceTls)
+                ? $sourceTls['allowInsecure']
+                : null,
+            array_key_exists('allow_insecure', $sourceTls)
+                ? $sourceTls['allow_insecure']
                 : null,
         ]);
 
@@ -725,24 +807,32 @@ class ConnectionProfile
             $realitySettings['publicKey'] ?? null,
             $profile['publicKey'] ?? null,
             $config['publicKey'] ?? null,
+            $sourceReality['publicKey'] ?? null,
+            $sourceReality['public_key'] ?? null,
         ]);
 
         $shortId = $this->firstValue([
             $realitySettings['shortId'] ?? null,
             $profile['shortId'] ?? null,
             $config['shortId'] ?? null,
+            $sourceReality['shortId'] ?? null,
+            $sourceReality['short_id'] ?? null,
         ]);
 
         $spiderX = $this->firstValue([
             $realitySettings['spiderX'] ?? null,
             $profile['spiderX'] ?? null,
             $config['spiderX'] ?? null,
+            $sourceReality['spiderX'] ?? null,
+            $sourceReality['spider_x'] ?? null,
         ]);
 
         $mldsa65Verify = $this->firstValue([
             $realitySettings['mldsa65Verify'] ?? null,
             $profile['mldsa65Verify'] ?? null,
             $config['mldsa65Verify'] ?? null,
+            $sourceReality['mldsa65Verify'] ?? null,
+            $sourceReality['mldsa65_verify'] ?? null,
         ]);
 
         return [
@@ -813,6 +903,17 @@ class ConnectionProfile
 
         if (!empty($profile['protocol'])) {
             return strtolower((string) $profile['protocol']);
+        }
+
+        if (isset($profile['configType'])) {
+            return match ((int) $profile['configType']) {
+                1 => 'vmess',
+                3 => 'shadowsocks',
+                5 => 'vless',
+                6 => 'trojan',
+                7 => 'socks',
+                default => '',
+            };
         }
 
         /*

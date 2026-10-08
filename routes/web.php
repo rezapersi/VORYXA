@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
 use Inertia\Inertia;
 use App\Models\Telchanel;
+use App\Http\Controllers\DecodeNpvtController;
 
 
 
@@ -19,14 +20,16 @@ Route::get('insertchannel', function () {
 });
 
 
+    Route::get('/decode', [DecodeNpvtController::class, 'index']);
 
-Route::get('/removecache', function () {
-    $exitCode = Artisan::call('cache:clear');
-    $exitCode = Artisan::call('config:clear');
-    $exitCode = Artisan::call('config:cache');
 
-    return 'DONE'; //Return anything
-});
+// Route::get('/removecache', function () {
+//     $exitCode = Artisan::call('cache:clear');
+//     $exitCode = Artisan::call('config:clear');
+//     $exitCode = Artisan::call('config:cache');
+
+//     return 'DONE'; //Return anything
+// });
 
 
 

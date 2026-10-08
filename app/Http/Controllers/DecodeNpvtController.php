@@ -25,11 +25,13 @@ class DecodeNpvtController extends Controller
 
         //1791230356_14031.npvt
 
-        $path = public_path('npvt/12345.npvt');
+        $path = public_path('npvt/test.npvt');
         if (file_exists($path)) {
             $contents = file_get_contents($path);
             $decoded = $this->decodenpvt->decodeNpvt($contents);
             $configs = $this->npvtexport->export($decoded);
+
+
 
             //  return response()->json([
             //     'count' => count($configs),
@@ -45,9 +47,9 @@ class DecodeNpvtController extends Controller
             // dd($normalized['all'], $uri);
 
 
-             //   $profile = $this->connectionprofile->normalize($configs[22]);
-             //     return response()->json(['configs' => $profile,
-         //   ]);
+            //   $profile = $this->connectionprofile->normalize($configs[22]);
+            //     return response()->json(['configs' => $profile,
+            //   ]);
 
 
             // $url = $this->uribuilder->build($profile);
@@ -55,6 +57,60 @@ class DecodeNpvtController extends Controller
 
 
             // Test builder uri
+
+
+
+            // foreach ($configs as $config) {
+
+
+            //     if (
+            //         str_contains(
+            //             (string) ($config['name'] ?? ''),
+            //             '🎃9'
+            //         )
+            //     ) {
+            //         // dump([
+            //         //     'name' => $config['name'] ?? null,
+            //         //     'protocol' => $config['protocol'] ?? null,
+            //         //     'address' => $config['address'] ?? null,
+            //         //     'port' => $config['port'] ?? null,
+            //         //     'method' => $config['method'] ?? null,
+            //         //     'password' => $config['password'] ?? null,
+            //         //     'network' => $config['network'] ?? null,
+            //         //     'security' => $config['security'] ?? null,
+            //         //     'host' => $config['host'] ?? null,
+            //         //     'path' => $config['path'] ?? null,
+            //         //     'sni' => $config['sni'] ?? null,
+            //         //     'alpn' => $config['alpn'] ?? null,
+            //         //     'fingerPrint' => $config['fingerPrint'] ?? null,
+            //         //     'insecure' => $config['insecure'] ?? null,
+            //         // ]);
+
+            //         $normalized = $this->connectionprofile->normalize($config);
+
+            //         $url = $this->uribuilder->build($normalized);
+
+            //         dd($url);
+
+            //         dump([
+            //             'name'       => $config['name'] ?? null,
+            //             'protocol'   => $config['protocol'] ?? null,
+            //             'address'    => $config['address'] ?? null,
+            //             'port'       => $config['port'] ?? null,
+            //             'method'     => $config['method'] ?? null,
+            //             'password'   => $config['password'] ?? null,
+            //             'network'    => $config['network'] ?? null,
+            //             'security'   => $config['security'] ?? null,
+
+            //             'transport'  => $config['transport'] ?? null,
+
+            //             'tls'        => $config['tls'] ?? null,
+
+            //             'raw_profile' => $config['raw_profile'] ?? null,
+            //         ]);
+            //     }
+            // }
+
 
             foreach ($configs as $config) {
 
@@ -76,25 +132,13 @@ class DecodeNpvtController extends Controller
                     ]);
                 }
             }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            //end
-
         }
+
+
+
+
+        //end
+
+
     }
 }

@@ -120,6 +120,8 @@ class NpvtExport
 
             'protocol' => $protocol ?: 'unknown',
 
+            'configType' => isset($profile['configType']) ? (int) $profile['configType'] : null,
+
             /*
              * Common endpoint.
              */
@@ -337,6 +339,20 @@ class NpvtExport
         array $config,
         array $profile
     ): string {
+
+        // configType is authoritative for direct NPVT profiles.
+        $configType = isset($profile['configType']) ? (int) $profile['configType'] : null;
+        $protocolByType = [
+            1 => 'vmess',
+            3 => 'shadowsocks',
+            5 => 'vless',
+            6 => 'trojan',
+            7 => 'socks',
+        ];
+
+        if ($configType !== null && isset($protocolByType[$configType])) {
+            return $protocolByType[$configType];
+        }
 
         /*
          * Explicit protocol fields first.
@@ -1462,195 +1478,109 @@ class NpvtExport
         string $protocol,
         array &$result
     ): void {
+        // Direct NPVT fields are protocol-dependent and overloaded.
+        // Interpret them only after protocol/configType is known.
+        $result['address'] = $profile['server'] ?? $profile['address'] ?? null;
+        $result['port'] = $this->normalizePort($profile['serverPort'] ?? $profile['port'] ?? null);
+        $result['network'] = $profile['network'] ?? null;
+        $result['security'] = $this->normalizeSecurityValue($profile['security'] ?? null);
 
-        /*
-         * Common endpoint.
-         */
-        $result['address'] =
-            $profile['server'] ??
-            $profile['address'] ??
-            null;
-
-        $result['port'] =
-            $this->normalizePort(
-                $profile['serverPort'] ??
-                    $profile['port'] ??
-                    null
-            );
-
-        /*
-         * Common credentials.
-         */
-        $result['uuid'] =
-            $profile['uuid'] ??
-            $profile['id'] ??
-            null;
-
-        $result['password'] =
-            $profile['password'] ??
-            null;
-
-        $result['username'] =
-            $profile['username'] ??
-            $profile['user'] ??
-            null;
-
-        $result['method'] =
-            $profile['method'] ??
-            $profile['security'] ??
-            $profile['encryptionMethod'] ??
-            null;
-
-        $result['encryption'] =
-            $profile['encryption'] ??
-            null;
-
-        $result['flow'] =
-            $profile['flow'] ??
-            null;
-
-        $result['network'] =
-            $profile['network'] ??
-            null;
-
-        /*
-         * Security.
-         */
-        if (!empty($profile['security'])) {
-            $security = strtolower(
-                (string) $profile['security']
-            );
-
-            if (in_array($security, [
-                'none',
-                'tls',
-                'reality',
-            ], true)) {
-                $result['security'] =
-                    $security;
-            }
+        switch (strtolower($protocol)) {
+            case 'vless':
+                $result['uuid'] = $profile['uuid'] ?? $profile['id'] ?? $profile['password'] ?? null;
+                $result['password'] = null;
+                $result['encryption'] = $profile['encryption'] ?? $profile['method'] ?? 'none';
+                $result['method'] = null;
+                $result['flow'] = $profile['flow'] ?? null;
+                break;
+            case 'vmess':
+                $result['uuid'] = $profile['uuid'] ?? $profile['id'] ?? $profile['password'] ?? null;
+                $result['password'] = null;
+                $result['method'] = $profile['method'] ?? null;
+                $result['encryption'] = $profile['encryption'] ?? null;
+                $result['flow'] = $profile['flow'] ?? null;
+                break;
+            case 'shadowsocks':
+                $result['uuid'] = null;
+                $result['password'] = $profile['password'] ?? null;
+                $result['method'] = $profile['method'] ?? null;
+                $result['encryption'] = null;
+                $result['flow'] = null;
+                break;
+            case 'trojan':
+                $result['uuid'] = null;
+                $result['password'] = $profile['password'] ?? null;
+                $result['method'] = null;
+                $result['encryption'] = $profile['encryption'] ?? null;
+                $result['flow'] = $profile['flow'] ?? null;
+                break;
+            case 'socks':
+                $result['uuid'] = null;
+                $result['username'] = $profile['username'] ?? $profile['user'] ?? null;
+                $result['password'] = $profile['password'] ?? null;
+                $result['method'] = null;
+                $result['encryption'] = null;
+                $result['flow'] = null;
+                break;
+            default:
+                $result['uuid'] = $profile['uuid'] ?? $profile['id'] ?? null;
+                $result['password'] = $profile['password'] ?? null;
+                $result['username'] = $profile['username'] ?? $profile['user'] ?? null;
+                $result['method'] = $profile['method'] ?? null;
+                $result['encryption'] = $profile['encryption'] ?? null;
+                $result['flow'] = $profile['flow'] ?? null;
+                break;
         }
 
-        /*
-         * Direct profile transport fields.
-         */
         $result['transport'] = [
-            'type' =>
-            $profile['network'] ??
-                null,
-
-            'host' =>
-            $profile['host'] ??
-                null,
-
-            'path' =>
-            $profile['path'] ??
-                null,
-
-            'service_name' =>
-            $profile['serviceName'] ??
-                $profile['service_name'] ??
-                null,
-
-            'header_type' =>
-            $profile['headerType'] ??
-                $profile['header_type'] ??
-                null,
-
-            'mode' =>
-            $profile['mode'] ??
-                null,
-
+            'type' => $profile['network'] ?? null,
+            'host' => $profile['host'] ?? null,
+            'path' => $profile['path'] ?? null,
+            'service_name' => $profile['serviceName'] ?? $profile['service_name'] ?? null,
+            'header_type' => $profile['headerType'] ?? $profile['header_type'] ?? null,
+            'mode' => $profile['mode'] ?? null,
+            'extra' => $profile['extra'] ?? null,
             'raw' => [
-                'host' =>
-                $profile['host'] ??
-                    null,
-
-                'path' =>
-                $profile['path'] ??
-                    null,
-
-                'serviceName' =>
-                $profile['serviceName'] ??
-                    null,
-
-                'headerType' =>
-                $profile['headerType'] ??
-                    null,
-
-                'mode' =>
-                $profile['mode'] ??
-                    null,
+                'network' => $profile['network'] ?? null,
+                'host' => $profile['host'] ?? null,
+                'path' => $profile['path'] ?? null,
+                'serviceName' => $profile['serviceName'] ?? null,
+                'headerType' => $profile['headerType'] ?? null,
+                'mode' => $profile['mode'] ?? null,
+                'extra' => $profile['extra'] ?? null,
             ],
         ];
 
-        /*
-         * TLS fields in direct profile.
-         */
         if ($result['security'] === 'tls') {
-
             $result['tls'] = [
-                'server_name' =>
-                $profile['serverName'] ??
-                    $profile['sni'] ??
-                    null,
-
-                'alpn' =>
-                $this->normalizeAlpn(
-                    $profile['alpn'] ?? null
-                ),
-
-                'allow_insecure' =>
-                $profile['allowInsecure'] ??
-                    $profile['insecure'] ??
-                    null,
-
-                'fingerprint' =>
-                $profile['fingerprint'] ??
-                    null,
-
+                'server_name' => $profile['serverName'] ?? $profile['sni'] ?? null,
+                'alpn' => $this->normalizeAlpn($profile['alpn'] ?? null),
+                'allow_insecure' => array_key_exists('insecure', $profile) ? $profile['insecure'] : ($profile['allowInsecure'] ?? null),
+                'fingerprint' => $profile['fingerPrint'] ?? $profile['fingerprint'] ?? null,
+                'ech_config_list' => $profile['echConfigList'] ?? null,
+                'verify_peer_cert_by_name' => $profile['verifyPeerCertByName'] ?? null,
+                'certificate_fingerprint' => $profile['certificateFingerprint'] ?? null,
                 'raw' => $profile,
             ];
-        }
-
-        /*
-         * REALITY fields in direct profile.
-         */
-        if ($result['security'] === 'reality') {
-
+        } elseif ($result['security'] === 'reality') {
             $result['reality'] = [
-                'server_name' =>
-                $profile['serverName'] ??
-                    $profile['sni'] ??
-                    null,
-
-                'fingerprint' =>
-                $profile['fingerprint'] ??
-                    null,
-
-                'public_key' =>
-                $profile['publicKey'] ??
-                    $profile['public_key'] ??
-                    null,
-
-                'short_id' =>
-                $profile['shortId'] ??
-                    $profile['short_id'] ??
-                    null,
-
-                'spider_x' =>
-                $profile['spiderX'] ??
-                    $profile['spider_x'] ??
-                    null,
-
+                'server_name' => $profile['serverName'] ?? $profile['sni'] ?? null,
+                'fingerprint' => $profile['fingerPrint'] ?? $profile['fingerprint'] ?? null,
+                'public_key' => $profile['publicKey'] ?? null,
+                'short_id' => $profile['shortId'] ?? null,
+                'spider_x' => $profile['spiderX'] ?? null,
+                'mldsa65_verify' => $profile['mldsa65Verify'] ?? null,
                 'raw' => $profile,
             ];
         }
     }
 
-    /**
-     * Fill address/port from top-level NPVT fields.
-     */
+    private function normalizeSecurityValue(mixed $value): string
+    {
+        $value = strtolower(trim((string) $value));
+        return in_array($value, ['none', 'tls', 'reality'], true) ? $value : 'none';
+    }
+
     protected function fillEndpointFallback(
         array $config,
         array $profile,

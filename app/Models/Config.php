@@ -9,6 +9,7 @@ class Config extends Model
    
     protected $fillable = [
         'name' ,
+        'beforename' ,
         'ip' ,
         'country_name' ,
         'country_code' ,
@@ -17,6 +18,7 @@ class Config extends Model
         'uri' ,
         'tel_channel_id' ,
         'filename' ,
+        
     ];
 
 

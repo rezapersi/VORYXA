@@ -17,7 +17,7 @@ class ConfigResource extends JsonResource
 
         return [
             'id' => $this->id,
-            'name' => $this->name,
+            'name' => $this->beforename,
             'countryName' => $this->country_name,
             'countryCode' => $this->country_code,
             'type' => $this->type,

@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('configs', function (Blueprint $table) {
             $table->id();
             $table->string('name', 255)->nullable();
+            $table->string('beforename', 255)->nullable();
             $table->string('ip', 255)->nullable();
             $table->string('country_name')->nullable();
             $table->string('country_code')->nullable();

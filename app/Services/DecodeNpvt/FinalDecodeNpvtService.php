@@ -64,6 +64,7 @@ class FinalDecodeNpvtService
 
                     Config::create([
                         'name' => $nameConfig,
+                        'beforename' => $config['name'],
                         'ip' =>  $ip,
                         'country_name' => $location->countryName,
                         'country_code' => $location->countryCode,
